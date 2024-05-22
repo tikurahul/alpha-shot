@@ -206,13 +206,13 @@ class SonyCameraControl(private val platform: Platform) {
         /**
          * Sony Manufacturer Id.
          */
-        const val SONY_ID = 301 // 0x012D
+        const val SONY_ID = 0x012D // Endianness
 
         /**
          * Manufacturer specific data payload in the advertising packet.
          */
         // [3, 0, 101, 0, 85, 49, 34, -65, 0, 35, -73, 12, 33, 96, 0, 0, 0, 0, 0, 0]
-        val sonyData = byteArrayOf(3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        val sonyData = byteArrayOf(0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
         /**
          * The actual data mask that defines the parts of the data that we care about.
@@ -251,12 +251,12 @@ class SonyCameraControl(private val platform: Platform) {
         /**
          * A payload that represents that the Camera has acquired focus.
          */
-        private val FOCUS_ACQUIRED = byteArrayOf(2, 63, 32)
+        private val FOCUS_ACQUIRED = byteArrayOf(0x02, 0x3F, 0x20)
 
         /**
          * The payload sent by the camera once a photo has been acquired.
          */
-        private val PICTURE_ACQUIRED = byteArrayOf(0x02, 0xa0.toByte(), 0x20)
+        private val PICTURE_ACQUIRED = byteArrayOf(0x02, 0xA0.toByte(), 0x20)
 
         /**
          * Creates a [CoroutineScope] per [com.juul.kable.Peripheral] that we connect to.
