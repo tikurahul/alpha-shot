@@ -1,4 +1,4 @@
-rootProject.name = "sony-camera-control-mpp"
+rootProject.name = "alpha-shot"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

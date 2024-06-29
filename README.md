@@ -1,14 +1,13 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# AlphaShot
 
-* `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - `commonMain` is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    `iosMain` would be the right folder for such calls.
+This is a Kotlin Multiplatform Compose app, that uses the Bluetooth Low Energy interface on the
+Sony Alpha series cameras (ones that support Bluetooth) to take pictures.
 
-* `/iosApp` contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform, 
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+Currently, the project supports basic remote triggers, to capture photos.
 
+## Features in the pipeline
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+* Make a good intervalometer by extending the ability to take remote-triggers.
+
+* The app should soon support the ability to geo-tag the photos on the Camera, using the GPS on the
+  smartphone. This way all the photos can include location metadata.

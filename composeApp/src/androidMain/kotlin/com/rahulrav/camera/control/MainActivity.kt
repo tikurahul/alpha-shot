@@ -1,7 +1,6 @@
 package com.rahulrav.camera.control
 
 import App
-import Platform
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -24,6 +23,7 @@ class MainActivity : ComponentActivity() {
                         App()
                     }
                 } else {
+                    // Do something better here.
                     Log.w(TAG, "Permissions unavailable.")
                 }
             }
