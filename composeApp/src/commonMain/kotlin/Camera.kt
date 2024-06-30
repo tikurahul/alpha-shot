@@ -1,3 +1,7 @@
+import alpha_shot.composeapp.generated.resources.Res
+import alpha_shot.composeapp.generated.resources.noun_camera_crossed
+import alpha_shot.composeapp.generated.resources.noun_camera_filled
+import alpha_shot.composeapp.generated.resources.noun_camera_outline
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Spring
@@ -27,28 +31,20 @@ import androidx.compose.ui.layout.ContentScale
 import com.juul.kable.State
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
-import sony_camera_control_mpp.composeapp.generated.resources.Res
-import sony_camera_control_mpp.composeapp.generated.resources.noun_camera_crossed
-import sony_camera_control_mpp.composeapp.generated.resources.noun_camera_filled
-import sony_camera_control_mpp.composeapp.generated.resources.noun_camera_outline
-
 
 enum class CameraStates {
     OTHER,
     CONNECTED
 }
 
-private fun CameraStates.label(): String {
-    return if (this == CameraStates.CONNECTED) {
+private fun CameraStates.label(): String =
+    if (this == CameraStates.CONNECTED) {
         "Connected to Camera"
     } else {
         "Attempting to connect to Camera"
     }
-}
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun Camera(cameraControl: SonyCameraControl) {
     val scope = rememberCoroutineScope()
