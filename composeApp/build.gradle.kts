@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ktfmt)
 }
 
 kotlin {
@@ -33,6 +34,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
+            implementation(libs.androidx.navigation)
+            implementation(libs.androidx.viewmodel)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)
