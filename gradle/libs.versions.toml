@@ -16,6 +16,8 @@ junit = "4.13.2"
 kotlin = "2.0.0"
 kable = "0.31.1"
 kermit = "2.0.3"
+ktfmt-plugin = "0.18.0"
+git-hooks-plugin = "2.0.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -39,3 +41,5 @@ androidLibrary = { id = "com.android.library", version.ref = "agp" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt-plugin" }
+gitHooks = { id = "org.danilopianini.gradle-pre-commit-git-hooks", version.ref = "git-hooks-plugin" }
