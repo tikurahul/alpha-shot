@@ -1,6 +1,6 @@
 import UIKit
 import SwiftUI
-import SonyCameraControl
+import AlphaShot
 
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
