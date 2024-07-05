@@ -119,4 +119,3 @@ fun Camera(cameraControl: SonyCameraControl) {
         }
     }
 }
-
