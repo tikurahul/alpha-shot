@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.util.fastAny
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 
 interface CameraScannerViewModel {
     val state: State<ScanState>
-    
+
     fun doScan()
 
     fun pair(camera: DiscoveredCamera)
@@ -28,10 +29,11 @@ class CameraScanViewModelImpl(
     private val scanDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel(), CameraScannerViewModel {
 
-    private val _state = mutableStateOf<ScanState>(ScanState.StartingScan)
+    private val _state = mutableStateOf<ScanState>(ScanState.Idle)
     override val state: State<ScanState> = _state
 
     override fun doScan() {
+        _state.value = ScanState.Scanning
         viewModelScope.launch(scanDispatcher) {
             cameraControl.scan().collect { onCameraDiscovered(it) }
         }
@@ -51,15 +53,21 @@ class CameraScanViewModelImpl(
 
         Logger.i("Camera discovered: ${advertisement.name} (${advertisement.identifier}")
         val manufacturerData = advertisement.manufacturerData(0x2D01)
+            ?: advertisement.manufacturerData(0x012D)
         if (manufacturerData == null) {
-            Logger.w("Ignoring discovered camera, missing manufacturer data.")
+            Logger.w("Ignoring discovered camera, missing manufacturer data.\n$advertisement")
             return
         }
 
-        val modelCode = manufacturerData.decodeToString(6, 7)
+        val modelCode = manufacturerData.decodeToString(4, 6)
         val modelInfo = SupportedAlphaCamera.forCodeOrNull(modelCode)
         if (modelInfo == null) {
-            Logger.i("Ignoring discovered camera, unsupported model.")
+            Logger.i("Ignoring discovered camera, unsupported model: $modelCode\n$advertisement")
+            return
+        }
+
+        if (scanResults.cameras.fastAny { it.identifier == advertisement.identifier }) {
+            Logger.d("Ignoring already discovered camera: ${advertisement.identifier}")
             return
         }
 
@@ -82,7 +90,9 @@ class CameraScanViewModelImpl(
 }
 
 sealed interface ScanState {
-    object StartingScan : ScanState
+    data object Idle : ScanState
+
+    data object Scanning : ScanState
 
     data class ScanResults(
         val cameras: SnapshotStateList<DiscoveredCamera> = mutableStateListOf(),

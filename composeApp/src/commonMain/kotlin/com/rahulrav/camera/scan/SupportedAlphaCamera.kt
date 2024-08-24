@@ -6,7 +6,7 @@ enum class SupportedAlphaCamera(
     val modelNumber: String
 ) {
   ILCE_7M4(
-      modelCode = "TODO",
+      modelCode = "U1",
       modelNumber = "ILCE-7M4",
       modelName = "Sony Alpha 7 IV",
   ),
@@ -22,7 +22,7 @@ enum class SupportedAlphaCamera(
   );
 
   companion object {
-    val modelsByCode = entries.associateBy { it.modelCode }
+    private val modelsByCode = entries.associateBy { it.modelCode }
 
     fun forCodeOrNull(modelCode: String) = modelsByCode[modelCode]
   }

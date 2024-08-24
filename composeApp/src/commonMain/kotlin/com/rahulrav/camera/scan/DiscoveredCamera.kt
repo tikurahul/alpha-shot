@@ -8,6 +8,4 @@ data class DiscoveredCamera(
     val modelCode: String,
     val modelInfo: SupportedAlphaCamera,
     val pairState: PairState,
-) {
-  val isSupported: Boolean = modelInfo != null
-}
+)
