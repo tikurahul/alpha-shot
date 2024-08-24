@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 
-interface CameraScanViewModel {
+interface CameraScannerViewModel {
     val state: State<ScanState>
     
     fun doScan()
@@ -26,7 +26,7 @@ interface CameraScanViewModel {
 class CameraScanViewModelImpl(
     private val cameraControl: SonyCameraControl = SonyCameraControl(getPlatform()),
     private val scanDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : ViewModel(), CameraScanViewModel {
+) : ViewModel(), CameraScannerViewModel {
 
     private val _state = mutableStateOf<ScanState>(ScanState.StartingScan)
     override val state: State<ScanState> = _state
@@ -69,6 +69,7 @@ class CameraScanViewModelImpl(
                 identifier = advertisement.identifier,
                 modelCode = modelCode,
                 modelInfo = modelInfo,
+                pairState = PairState.NotPaired,
             )
         scanResults.cameras += discoveredCamera
 

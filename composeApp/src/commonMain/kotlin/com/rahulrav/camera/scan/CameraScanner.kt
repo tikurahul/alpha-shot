@@ -14,8 +14,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun CameraScanner(
-    viewModel: CameraScanViewModel,
-    modifier: Modifier = Modifier
+    viewModel: CameraScannerViewModel,
+    modifier: Modifier = Modifier,
+    onCameraSelected: (SupportedAlphaCamera) -> Unit,
 ) {
     when (val state = viewModel.state.value) {
         is ScanState.StartingScan -> Scanning(modifier)

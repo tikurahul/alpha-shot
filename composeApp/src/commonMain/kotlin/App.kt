@@ -5,7 +5,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.rahulrav.camera.scan.CameraScanViewModel
+import com.rahulrav.camera.scan.CameraScannerViewModel
 import com.rahulrav.camera.scan.CameraScanViewModelImpl
 import com.rahulrav.camera.scan.CameraScanner
 import com.rahulrav.camera.scan.SupportedAlphaCamera
