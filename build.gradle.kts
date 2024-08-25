@@ -14,8 +14,7 @@ ktfmt {
     kotlinLangStyle()
 }
 
-val ktfmtCheck = tasks.named("ktfmtCheck")
-
-tasks.register("prePush") {    dependsOn(ktfmtCheck)
+tasks.register("prePush") {
+    dependsOn(tasks.named("ktfmtCheck"))
     group = "validation"
 }

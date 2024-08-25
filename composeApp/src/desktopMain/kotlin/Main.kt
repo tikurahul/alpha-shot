@@ -17,10 +17,9 @@ fun main() = application {
             Column(
                 Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Test")
-            }
+                verticalArrangement = Arrangement.Center) {
+                    Text("Test")
+                }
         }
     }
 }

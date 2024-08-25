@@ -11,49 +11,85 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.juul.kable.Advertisement
 import getPlatform
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 interface CameraScannerViewModel {
     val state: State<ScanState>
 
     fun doScan()
 
-    fun pair(camera: DiscoveredCamera)
+    fun stopScan()
+
+    fun pairAndConnect(camera: DiscoveredCamera)
 }
 
 class CameraScanViewModelImpl(
     private val cameraControl: SonyCameraControl = SonyCameraControl(getPlatform()),
-    private val scanDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val bleDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel(), CameraScannerViewModel {
 
     private val _state = mutableStateOf<ScanState>(ScanState.Idle)
     override val state: State<ScanState> = _state
 
+    private var scanJob: Job? = null
+
     override fun doScan() {
-        _state.value = ScanState.Scanning
-        viewModelScope.launch(scanDispatcher) {
-            cameraControl.scan().collect { onCameraDiscovered(it) }
+        if (scanJob != null) {
+            Logger.e("Scan job is not null while not scanning, how?")
+            return
         }
+        if (_state.value is ScanState.Scanning) {
+            Logger.e("Scan state is Scanning while not scanning, how?")
+            return
+        }
+
+        _state.value = ScanState.Scanning()
+        scanJob =
+            viewModelScope.launch(bleDispatcher) {
+                cameraControl.scan().collect { onCameraDiscovered(it) }
+            }
+        Logger.i("Scan started")
+    }
+
+    override fun stopScan() {
+        val currentState = _state.value
+        if (currentState !is ScanState.Scanning) {
+            Logger.e("Can't stop scanning because no scan is in progress")
+            return
+        }
+
+        val currentJob = scanJob
+        if (currentJob == null) {
+            Logger.e("Scan job is null while state is Scanning, how?")
+            return
+        }
+
+        currentJob.cancel("Stop scanning")
+        scanJob = null
+
+        _state.value =
+            if (currentState.cameras.isEmpty()) {
+                ScanState.Idle
+            } else {
+                ScanState.IdleWithResults(currentState.cameras)
+            }
+
+        Logger.i("Scan stopped")
     }
 
     private fun onCameraDiscovered(advertisement: Advertisement) {
         val scanResults =
             when (val currentState = _state.value) {
-                is ScanState.ScanResults -> currentState
+                is ScanState.Scanning -> currentState
                 else -> {
                     Logger.i("First camera discovered, moving to ScanResults...")
-                    val scanResults = ScanState.ScanResults()
-                    _state.value = scanResults
-                    scanResults
+                    ScanState.Scanning().also { newState -> _state.value = newState }
                 }
             }
 
         Logger.i("Camera discovered: ${advertisement.name} (${advertisement.identifier}")
-        val manufacturerData = advertisement.manufacturerData(0x2D01)
-            ?: advertisement.manufacturerData(0x012D)
+        val manufacturerData =
+            advertisement.manufacturerData(0x2D01) ?: advertisement.manufacturerData(0x012D)
         if (manufacturerData == null) {
             Logger.w("Ignoring discovered camera, missing manufacturer data.\n$advertisement")
             return
@@ -74,7 +110,7 @@ class CameraScanViewModelImpl(
         val discoveredCamera =
             DiscoveredCamera(
                 name = advertisement.name ?: advertisement.peripheralName ?: "Unknown",
-                identifier = advertisement.identifier,
+                advertisement = advertisement,
                 modelCode = modelCode,
                 modelInfo = modelInfo,
                 pairState = PairState.NotPaired,
@@ -84,17 +120,23 @@ class CameraScanViewModelImpl(
         scanResults.cameras.sortBy { it.name }
     }
 
-    override fun pair(camera: DiscoveredCamera) {
-        TODO()
+    override fun pairAndConnect(camera: DiscoveredCamera) {
+        viewModelScope.launch(bleDispatcher) { cameraControl.connect(camera) }
     }
 }
 
 sealed interface ScanState {
     data object Idle : ScanState
 
-    data object Scanning : ScanState
+    data class Scanning(
+        override val cameras: SnapshotStateList<DiscoveredCamera> = mutableStateListOf(),
+    ) : ScanState, StateWithResults
 
-    data class ScanResults(
-        val cameras: SnapshotStateList<DiscoveredCamera> = mutableStateListOf(),
-    ) : ScanState
+    data class IdleWithResults(
+        override val cameras: SnapshotStateList<DiscoveredCamera>,
+    ) : ScanState, StateWithResults
+
+    interface StateWithResults {
+        val cameras: List<DiscoveredCamera>
+    }
 }

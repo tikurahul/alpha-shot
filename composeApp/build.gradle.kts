@@ -109,3 +109,7 @@ compose.desktop {
         }
     }
 }
+
+ktfmt {
+    kotlinLangStyle()
+}
