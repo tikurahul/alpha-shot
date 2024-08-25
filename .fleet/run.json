@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "gradle",
+            "name": "Reformat with ktfmt",
+            "tasks": [
+                "ktfmtFormat"
+            ],
+        },
+    ]
+}

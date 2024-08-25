@@ -28,7 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import com.juul.kable.State
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -49,44 +49,70 @@ private fun CameraStates.label(): String =
 fun Camera(cameraControl: SonyCameraControl) {
     val scope = rememberCoroutineScope()
     var cameraState by remember { mutableStateOf(CameraStates.OTHER) }
+
     AnimatedContent(
         targetState = cameraState,
         transitionSpec = {
             val enter = slideInVertically { height -> height } + fadeIn()
             val exit = slideOutVertically { height -> -height } + fadeOut()
-            enter.togetherWith(exit).using(
-                // We want to animate out of bounds to give the impression that this is
-                // flying outside the container.
-                SizeTransform(clip = false)
-            )
+            enter
+                .togetherWith(exit)
+                .using(
+                    // We want to animate out of bounds to give the impression that this is
+                    // flying outside the container.
+                    SizeTransform(clip = false))
         },
-        label = "Camera control"
-    ) {
-        var isTakingAPicture by remember { mutableStateOf(false) }
-        val fractionalValue = if (isTakingAPicture) 0.80F else 0.6F
-        val fraction by animateFloatAsState(
-            fractionalValue,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioHighBouncy,
-                stiffness = Spring.StiffnessMediumLow
-            ),
-            label = "Icon Zoom Animation",
-            finishedListener = {
-                isTakingAPicture = false
+        label = "Camera control",
+    ) { targetCameraState ->
+        Camera(cameraState, scope, cameraControl, targetCameraState)
+    }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            cameraControl.state.collect { cameraControlState ->
+                cameraState =
+                    when (cameraControlState) {
+                        is SonyCameraControl.CameraControlState.Connected -> CameraStates.CONNECTED
+                        else -> CameraStates.OTHER
+                    }
             }
-        )
-        val resource: DrawableResource = when {
+        }
+    }
+
+    DisposableEffect(cameraControl) { onDispose { cameraControl.dispose() } }
+}
+
+@Composable
+private fun Camera(
+    cameraState: CameraStates,
+    scope: CoroutineScope,
+    cameraControl: SonyCameraControl,
+    it: CameraStates
+) {
+    var isTakingAPicture by remember { mutableStateOf(false) }
+    val fractionalValue = if (isTakingAPicture) 0.80F else 0.6F
+    val fraction by
+        animateFloatAsState(
+            fractionalValue,
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioHighBouncy,
+                    stiffness = Spring.StiffnessMediumLow),
+            label = "Icon Zoom Animation",
+            finishedListener = { isTakingAPicture = false })
+
+    val resource: DrawableResource =
+        when {
             isTakingAPicture -> Res.drawable.noun_camera_filled
             cameraState == CameraStates.OTHER -> Res.drawable.noun_camera_crossed
             else -> Res.drawable.noun_camera_outline
         }
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Image(
-                painterResource(resource),
-                modifier = Modifier.fillMaxWidth(fraction = fraction).clickable {
+
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(
+            painterResource(resource),
+            modifier =
+                Modifier.fillMaxWidth(fraction = fraction).clickable {
                     scope.launch {
                         if (cameraState == CameraStates.CONNECTED) {
                             isTakingAPicture = true
@@ -94,28 +120,10 @@ fun Camera(cameraControl: SonyCameraControl) {
                         }
                     }
                 },
-                contentScale = ContentScale.FillWidth,
-                contentDescription = "Camera Icon"
-            )
-            Text(it.label())
-        }
-    }
-    LaunchedEffect(Unit) {
-        scope.launch {
-            cameraControl.connect()
-        }
-        scope.launch {
-            cameraControl.cameraState().collect {
-                cameraState = when (it) {
-                    is State.Connected -> CameraStates.CONNECTED
-                    else -> CameraStates.OTHER
-                }
-            }
-        }
-    }
-    DisposableEffect(cameraControl) {
-        onDispose {
-            cameraControl.onCleared()
-        }
+            contentScale = ContentScale.FillWidth,
+            contentDescription = "Camera Icon",
+        )
+
+        Text(it.label())
     }
 }

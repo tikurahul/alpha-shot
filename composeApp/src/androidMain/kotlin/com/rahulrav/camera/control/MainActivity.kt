@@ -14,18 +14,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val permissionLauncher =
             registerForActivityResult(
-                contract = ActivityResultContracts.RequestMultiplePermissions()
-            ) { permissions ->
-                val granted = permissions.all { it.value }
-                if (granted) {
-                    setContent {
-                        App()
+                contract = ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+                    val granted = permissions.all { it.value }
+                    if (granted) {
+                        setContent { App() }
+                    } else {
+                        // Do something better here.
+                        Log.w(TAG, "Permissions unavailable.")
                     }
-                } else {
-                    // Do something better here.
-                    Log.w(TAG, "Permissions unavailable.")
                 }
-            }
         val requiredPermissions = bluetoothPermissions
         permissionLauncher.launch(requiredPermissions.toTypedArray())
     }
