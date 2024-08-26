@@ -31,6 +31,7 @@ fun CameraScanner(
                     { camera -> viewModel.pairAndConnect(camera) },
                     { viewModel.stopScan() },
                 )
+
             is ScanState.IdleWithResults ->
                 ScanStopped(
                     targetState.cameras,
@@ -50,9 +51,10 @@ private fun IdleScreen(modifier: Modifier, onDoScanClick: () -> Unit) {
         }
 
         Button(
-            onDoScanClick, Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()) {
-                Text("Scan now")
-            }
+            onDoScanClick, Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()
+        ) {
+            Text("Scan now")
+        }
     }
 }
 
@@ -77,9 +79,10 @@ private fun Scanning(
         }
 
         Button(
-            onStopScanClick, Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()) {
-                Text("Stop scanning")
-            }
+            onStopScanClick, Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()
+        ) {
+            Text("Stop scanning")
+        }
     }
 }
 
@@ -108,9 +111,10 @@ private fun ScanStopped(
 
         Button(
             onRestartScanClick,
-            Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()) {
-                Text("Restart scanning")
-            }
+            Modifier.padding(horizontal = 32.dp, vertical = 8.dp).fillMaxWidth()
+        ) {
+            Text("Restart scanning")
+        }
     }
 }
 
@@ -123,37 +127,40 @@ private fun ScanResults(
     Column(
         modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Discovered cameras!")
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Discovered cameras!")
 
-            LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
-                items(cameras, key = { it.identifier }) { camera ->
-                    Card(Modifier.fillMaxWidth().clickable { onPairCamera(camera) }) {
-                        Row(
-                            Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    imageResource(camera.modelInfo.picture),
-                                    null,
-                                    Modifier.size(48.dp))
-
-                                Spacer(Modifier.width(8.dp))
-
-                                Column {
-                                    Text(
-                                        camera.modelInfo.modelName,
-                                        style = MaterialTheme.typography.body1)
-                                    DisabledAlpha {
-                                        Text(
-                                            "${camera.name} (${camera.identifier.toString()})",
-                                            style = MaterialTheme.typography.caption)
-                                    }
-                                }
+        LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+            items(cameras, key = { it.identifier }) { camera ->
+                Card(Modifier.fillMaxWidth().clickable { onPairCamera(camera) }) {
+                    Row(
+                        Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            imageResource(camera.modelInfo.picture),
+                            null,
+                            Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                camera.modelInfo.modelName,
+                                style = MaterialTheme.typography.body1
+                            )
+                            DisabledAlpha {
+                                Text(
+                                    "${camera.name} (${camera.identifier})",
+                                    style = MaterialTheme.typography.caption
+                                )
                             }
+                        }
                     }
                 }
             }
         }
+    }
 }
 
 @Composable

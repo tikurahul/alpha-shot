@@ -12,9 +12,13 @@ import androidx.compose.ui.tooling.preview.Preview
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val permissionLauncher =
-            registerForActivityResult(
-                contract = ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        // Context: https://github.com/JuulLabs/kable/issues/737
+        // We need to first ensure that we have a Bluetooth Adapter that is usable.
+        if (isBluetoothAvailable()) {
+            val permissionLauncher =
+                registerForActivityResult(
+                    contract = ActivityResultContracts.RequestMultiplePermissions()
+                ) { permissions ->
                     val granted = permissions.all { it.value }
                     if (granted) {
                         setContent { App() }
@@ -23,8 +27,11 @@ class MainActivity : ComponentActivity() {
                         Log.w(TAG, "Permissions unavailable.")
                     }
                 }
-        val requiredPermissions = bluetoothPermissions
-        permissionLauncher.launch(requiredPermissions.toTypedArray())
+            val requiredPermissions = bluetoothPermissions
+            permissionLauncher.launch(requiredPermissions.toTypedArray())
+        } else {
+            Log.w(TAG, "Bluetooth unavailable.")
+        }
     }
 
     companion object {

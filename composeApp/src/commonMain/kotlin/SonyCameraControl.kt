@@ -1,8 +1,7 @@
 import co.touchlab.kermit.Logger
 import com.juul.kable.Advertisement
-import com.juul.kable.Bluetooth
-import com.juul.kable.ConnectionLostException
 import com.juul.kable.Filter
+import com.juul.kable.NotConnectedException
 import com.juul.kable.Peripheral
 import com.juul.kable.Scanner
 import com.juul.kable.State
@@ -10,34 +9,37 @@ import com.juul.kable.WriteType
 import com.juul.kable.characteristicOf
 import com.juul.kable.logs.Logging
 import com.juul.kable.logs.SystemLogEngine
-import com.juul.kable.peripheral
 import com.rahulrav.camera.scan.DiscoveredCamera
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class SonyCameraControl(private val platform: Platform) {
     /** The [Scanner] used to scan for the Camera. */
     private val scanner = Scanner {
-        filters =
-            listOf(Filter.ManufacturerData(id = SONY_ID, data = sonyData, dataMask = sonyDataMask))
-
+        filters {
+            match {
+                manufacturerData = listOf(
+                    Filter.ManufacturerData(
+                        id = SONY_ID,
+                        data = sonyData,
+                        dataMask = sonyDataMask
+                    )
+                )
+            }
+        }
         logging {
             engine = SystemLogEngine
             level = Logging.Level.Warnings
@@ -45,8 +47,11 @@ class SonyCameraControl(private val platform: Platform) {
         }
     }
 
-    /** The [CoroutineScope] for the BLE peripheral device. */
-    private val coroutineScope = newScope()
+    /** The parent job in charge of all other coroutines. */
+    private val rootJob = SupervisorJob()
+
+    /** The [CoroutineScope] for camera scanning. */
+    private val scope = CoroutineScope(Dispatchers.IO + rootJob)
 
     /** The last known [DiscoveredCamera] instance that we connected to. */
     private var camera: DiscoveredCamera? = null
@@ -59,6 +64,7 @@ class SonyCameraControl(private val platform: Platform) {
         MutableStateFlow(CameraControlState.NoCamera)
     val state: StateFlow<CameraControlState> = _state
 
+    // We want to look for all cameras manufactured by Sony that fit our criteria.
     fun scan(): Flow<Advertisement> = scanner.advertisements
 
     fun dispose() {
@@ -66,16 +72,15 @@ class SonyCameraControl(private val platform: Platform) {
             peripheral?.disconnect()
             camera = null
             peripheral = null
-            coroutineScope.cancel()
         }
     }
 
     fun connect(camera: DiscoveredCamera) {
-        coroutineScope.launch { findAndConnect(camera) }
+        scope.launch { findAndConnect(camera) }
     }
 
     fun capturePhoto() {
-        coroutineScope.launch {
+        peripheral?.launch {
             acquireFocus()
             captureRequest()
             val pictureAcquired =
@@ -89,14 +94,16 @@ class SonyCameraControl(private val platform: Platform) {
     }
 
     private suspend fun findAndConnect(camera: DiscoveredCamera) {
-        val peripheral = coroutineScope.peripheral(camera.advertisement)
+        val peripheral = Peripheral(camera.advertisement) {
+            // No additional config necessary.
+        }
         Logger.d(TAG) { "Ready to use peripheral $peripheral" }
 
         this.peripheral = peripheral
         this.camera = camera
 
         // Relay state transitions from the peripheral.
-        coroutineScope.launch {
+        scope.launch {
             peripheral.state.collect {
                 Logger.d(TAG) { "Peripheral State: $it" }
                 _state.value = wrapBleState(it)
@@ -104,24 +111,22 @@ class SonyCameraControl(private val platform: Platform) {
         }
         try {
             peripheral.connect()
-        } catch (exception: ConnectionLostException) {
+        } catch (exception: NotConnectedException) {
             // Will reconnect.
         }
         // Setup auto-reconnect behavior outside of the Bluetooth Stack.
         enableAutoReconnect(camera)
     }
 
-    private fun acquireFocus() {
-        coroutineScope.launch {
-            // Send the focus reset command
-            reset()
-            // Send the request focus command
-            focusRequest()
-            // Wait for a response
-            val focusAcquired = peripheral?.awaitNotification { it.contentEquals(FOCUS_ACQUIRED) }
-            if (focusAcquired != null) {
-                Logger.d(TAG) { "Acquired focus" }
-            }
+    private suspend fun acquireFocus() {
+        // Send the focus reset command
+        reset()
+        // Send the request focus command
+        focusRequest()
+        // Wait for a response
+        val focusAcquired = peripheral?.awaitNotification { it.contentEquals(FOCUS_ACQUIRED) }
+        if (focusAcquired != null) {
+            Logger.d(TAG) { "Acquired focus" }
         }
     }
 
@@ -144,31 +149,12 @@ class SonyCameraControl(private val platform: Platform) {
     }
 
     private suspend fun enableAutoReconnect(camera: DiscoveredCamera) {
-        combine(Bluetooth.availability, state) {
-                availability: Bluetooth.Availability,
-                state: CameraControlState ->
-                availability to state
-            }
-            .filter { (availability, state) ->
-                availability == Bluetooth.Availability.Available &&
-                    (state is CameraControlState.Disconnected)
-            }
-            .first()
-        coroutineScope.ensureActive()
+        state.filter { it is CameraControlState.Disconnected }.first()
+        scope.ensureActive()
         peripheral = null
         Logger.d(TAG) { "Waiting to reconnect to camera." }
         delay(reconnectDelay)
         findAndConnect(camera)
-    }
-
-    private fun advertisementFlow(): Flow<Advertisement> {
-        val advertisementFlow =
-            scanner.advertisements
-                // Only look for devices that we have paired with in the past
-                .filter { it.isConnectable == true && platform.bleFilter().invoke(it) }
-
-        advertisementFlow.launchIn(coroutineScope)
-        return advertisementFlow
     }
 
     companion object {
@@ -176,11 +162,6 @@ class SonyCameraControl(private val platform: Platform) {
 
         /** The delay if we temporarily get reconnected. */
         private val reconnectDelay = 1.seconds
-
-        private val peripheralJob = Job()
-
-        //  The scope that manages the lifetime of the peripherals we connect to.
-        private val scope = CoroutineScope(Dispatchers.IO + peripheralJob)
 
         /** Sony Manufacturer Id. */
         const val SONY_ID = 0x012D // Endianness
@@ -196,7 +177,8 @@ class SonyCameraControl(private val platform: Platform) {
          */
         val sonyDataMask =
             byteArrayOf(
-                0xFF.toByte(), 0xFF.toByte(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                0xFF.toByte(), 0xFF.toByte(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            )
 
         /** The Remote Camera Control Descriptor. */
         private const val CAMERA_CONTROL = "8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF"
@@ -218,14 +200,6 @@ class SonyCameraControl(private val platform: Platform) {
 
         /** The payload sent by the camera once a photo has been acquired. */
         private val PICTURE_ACQUIRED = byteArrayOf(0x02, 0xA0.toByte(), 0x20)
-
-        /** Creates a [CoroutineScope] per [com.juul.kable.Peripheral] that we connect to. */
-        private fun newScope(): CoroutineScope {
-            // https://github.com/JuulLabs/kable/issues/577
-            // Create an intermediate scope to Kable can reap the threads on disconnect.
-            val job = Job(scope.coroutineContext.job)
-            return CoroutineScope(scope.coroutineContext + job)
-        }
 
         private suspend fun Peripheral.awaitNotification(
             maxDelay: Duration = 1.seconds,

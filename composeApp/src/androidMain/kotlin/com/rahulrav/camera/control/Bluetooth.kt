@@ -4,9 +4,12 @@ import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.BLUETOOTH_SCAN
+import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.P
 import android.os.Build.VERSION_CODES.R
+
 
 val bluetoothPermissions: Set<String>
     get() =
@@ -38,3 +41,10 @@ val bluetoothPermissions: Set<String>
             // https://developer.android.com/guide/topics/connectivity/bluetooth/permissions#declare-android12-or-higher
             else /* SDK_INT >= S */ -> setOf(BLUETOOTH_SCAN, BLUETOOTH_CONNECT)
         }
+
+
+fun Context.isBluetoothAvailable(): Boolean {
+    val manager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    val adapter = manager.adapter
+    return adapter != null && adapter.isEnabled
+}

@@ -1,3 +1,6 @@
+package com.rahulrav.camera
+
+import SonyCameraControl
 import alpha_shot.composeapp.generated.resources.Res
 import alpha_shot.composeapp.generated.resources.noun_camera_crossed
 import alpha_shot.composeapp.generated.resources.noun_camera_filled
@@ -60,7 +63,8 @@ fun Camera(cameraControl: SonyCameraControl) {
                 .using(
                     // We want to animate out of bounds to give the impression that this is
                     // flying outside the container.
-                    SizeTransform(clip = false))
+                    SizeTransform(clip = false)
+                )
         },
         label = "Camera control",
     ) { targetCameraState ->
@@ -92,14 +96,15 @@ private fun Camera(
     var isTakingAPicture by remember { mutableStateOf(false) }
     val fractionalValue = if (isTakingAPicture) 0.80F else 0.6F
     val fraction by
-        animateFloatAsState(
-            fractionalValue,
-            animationSpec =
-                spring(
-                    dampingRatio = Spring.DampingRatioHighBouncy,
-                    stiffness = Spring.StiffnessMediumLow),
-            label = "Icon Zoom Animation",
-            finishedListener = { isTakingAPicture = false })
+    animateFloatAsState(
+        fractionalValue,
+        animationSpec =
+        spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "Icon Zoom Animation",
+        finishedListener = { isTakingAPicture = false })
 
     val resource: DrawableResource =
         when {
@@ -112,14 +117,14 @@ private fun Camera(
         Image(
             painterResource(resource),
             modifier =
-                Modifier.fillMaxWidth(fraction = fraction).clickable {
-                    scope.launch {
-                        if (cameraState == CameraStates.CONNECTED) {
-                            isTakingAPicture = true
-                            cameraControl.capturePhoto()
-                        }
+            Modifier.fillMaxWidth(fraction = fraction).clickable {
+                scope.launch {
+                    if (cameraState == CameraStates.CONNECTED) {
+                        isTakingAPicture = true
+                        cameraControl.capturePhoto()
                     }
-                },
+                }
+            },
             contentScale = ContentScale.FillWidth,
             contentDescription = "Camera Icon",
         )
