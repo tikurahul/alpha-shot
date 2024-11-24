@@ -1,6 +1,5 @@
 package com.rahulrav.camera.scan
 
-import SonyCameraControl
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,8 +9,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.juul.kable.Advertisement
-import getPlatform
-import kotlinx.coroutines.*
+import com.rahulrav.camera.SonyCameraControl
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 interface CameraScannerViewModel {
     val state: State<ScanState>
@@ -24,7 +28,7 @@ interface CameraScannerViewModel {
 }
 
 class CameraScanViewModelImpl(
-    private val cameraControl: SonyCameraControl = SonyCameraControl(getPlatform()),
+    private val cameraControl: SonyCameraControl = SonyCameraControl(),
     private val bleDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel(), CameraScannerViewModel {
 

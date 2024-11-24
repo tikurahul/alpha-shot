@@ -1,6 +1,5 @@
 package com.rahulrav.camera
 
-import SonyCameraControl
 import alpha_shot.composeapp.generated.resources.Res
 import alpha_shot.composeapp.generated.resources.noun_camera_crossed
 import alpha_shot.composeapp.generated.resources.noun_camera_filled
@@ -35,7 +34,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.navigation.NavController
 import com.rahulrav.camera.scan.CameraScanViewModelImpl
 import com.rahulrav.camera.scan.CameraScanner
-import getPlatform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -55,7 +53,7 @@ private fun CameraStates.label(): String =
 
 @Composable
 fun CameraScanOrControl(navController: NavController) {
-    val cameraControl by remember { mutableStateOf(SonyCameraControl(getPlatform())) }
+    val cameraControl by remember { mutableStateOf(SonyCameraControl()) }
     DisposableEffect(cameraControl) { onDispose { cameraControl.dispose() } }
     val state by cameraControl.state.collectAsState()
     if (state == SonyCameraControl.CameraControlState.NoCamera) {

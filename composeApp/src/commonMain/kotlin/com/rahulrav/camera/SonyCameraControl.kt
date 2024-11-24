@@ -1,3 +1,5 @@
+package com.rahulrav.camera
+
 import co.touchlab.kermit.Logger
 import com.juul.kable.Advertisement
 import com.juul.kable.Filter
@@ -26,7 +28,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class SonyCameraControl(private val platform: Platform) {
+class SonyCameraControl() {
     /** The [Scanner] used to scan for the Camera. */
     private val scanner = Scanner {
         filters {
