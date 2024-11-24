@@ -18,20 +18,6 @@ fun App() {
             verticalArrangement = Arrangement.Center
         ) {
             DrawerScaffold()
-//            val cameraControl by remember { mutableStateOf(SonyCameraControl(getPlatform())) }
-//            DisposableEffect(cameraControl) { onDispose { cameraControl.dispose() } }
-//            // TODO implement actual navigation
-//            val state by cameraControl.state.collectAsState()
-//            if (state == SonyCameraControl.CameraControlState.NoCamera) {
-//                // Scan UI
-//                val viewModel = remember(cameraControl) {
-//                    CameraScanViewModelImpl(cameraControl)
-//                }
-//                CameraScanner(viewModel)
-//            } else {
-//                // Control UI
-//                Camera(cameraControl)
-//            }
         }
     }
 }

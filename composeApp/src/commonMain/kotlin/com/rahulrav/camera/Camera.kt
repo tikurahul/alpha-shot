@@ -23,6 +23,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.navigation.NavController
+import com.rahulrav.camera.scan.CameraScanViewModelImpl
+import com.rahulrav.camera.scan.CameraScanner
+import getPlatform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -47,6 +52,23 @@ private fun CameraStates.label(): String =
     } else {
         "Attempting to connect to Camera"
     }
+
+@Composable
+fun CameraScanOrControl(navController: NavController) {
+    val cameraControl by remember { mutableStateOf(SonyCameraControl(getPlatform())) }
+    DisposableEffect(cameraControl) { onDispose { cameraControl.dispose() } }
+    val state by cameraControl.state.collectAsState()
+    if (state == SonyCameraControl.CameraControlState.NoCamera) {
+        // Scan UI
+        val viewModel = remember(cameraControl) {
+            CameraScanViewModelImpl(cameraControl)
+        }
+        CameraScanner(viewModel)
+    } else {
+        // Control UI
+        Camera(cameraControl)
+    }
+}
 
 @Composable
 fun Camera(cameraControl: SonyCameraControl) {

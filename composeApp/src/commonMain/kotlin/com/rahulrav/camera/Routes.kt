@@ -9,7 +9,7 @@ import org.jetbrains.compose.resources.DrawableResource
 @Serializable
 sealed class Routes {
     @Serializable
-    data object CameraControl : Routes()
+    data object CameraScanOrControl : Routes()
 
     @Serializable
     data object Settings : Routes()
@@ -20,7 +20,7 @@ data class TopLevelRoute<R : Routes>(
 )
 
 val TOP_LEVEL_HOME_ROUTE = TopLevelRoute(
-    "Home", Res.drawable.noun_home, Routes.CameraControl
+    "Home", Res.drawable.noun_home, Routes.CameraScanOrControl
 )
 
 val TOP_LEVEL_ROUTES = listOf(
