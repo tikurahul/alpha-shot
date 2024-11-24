@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.navigation.NavController
+import co.touchlab.kermit.Logger
 import com.rahulrav.camera.scan.CameraScanViewModelImpl
 import com.rahulrav.camera.scan.CameraScanner
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +53,16 @@ private fun CameraStates.label(): String =
     }
 
 @Composable
-fun CameraScanOrControl(navController: NavController) {
+fun CameraRoute(navController: NavController) {
     val cameraControl by remember { mutableStateOf(SonyCameraControl()) }
-    DisposableEffect(cameraControl) { onDispose { cameraControl.dispose() } }
+    DisposableEffect(cameraControl) {
+        onDispose {
+            Logger.d("Camera Scan Route") { "onDispose()" }
+            cameraControl.dispose()
+        }
+    }
     val state by cameraControl.state.collectAsState()
+    Logger.d("Camera Scan Route") { "State: $state" }
     if (state == SonyCameraControl.CameraControlState.NoCamera) {
         // Scan UI
         val viewModel = remember(cameraControl) {
@@ -63,7 +70,6 @@ fun CameraScanOrControl(navController: NavController) {
         }
         CameraScanner(viewModel)
     } else {
-        // Control UI
         Camera(cameraControl)
     }
 }

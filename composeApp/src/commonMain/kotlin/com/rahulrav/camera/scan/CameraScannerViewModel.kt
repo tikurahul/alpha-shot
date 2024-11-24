@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.juul.kable.Advertisement
 import com.rahulrav.camera.SonyCameraControl
+import com.rahulrav.camera.scan.CameraScannerViewModel.Companion.TAG
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -20,11 +21,15 @@ import kotlinx.coroutines.launch
 interface CameraScannerViewModel {
     val state: State<ScanState>
 
-    fun doScan()
+    fun scan()
 
-    fun stopScan()
+    fun stopScanning()
 
     fun pairAndConnect(camera: DiscoveredCamera)
+
+    companion object {
+        const val TAG = "CameraScannerViewModel"
+    }
 }
 
 class CameraScanViewModelImpl(
@@ -35,41 +40,42 @@ class CameraScanViewModelImpl(
     private val _state = mutableStateOf<ScanState>(ScanState.Idle)
     override val state: State<ScanState> = _state
 
-    private var scanJob: Job? = null
+    // The job responsible for scanning a peripheral.
+    private var job: Job? = null
 
-    override fun doScan() {
-        if (scanJob != null) {
-            Logger.e("Scan job is not null while not scanning, how?")
+    override fun scan() {
+        if (job != null) {
+            Logger.e(TAG) { "Scan job is not null while not scanning, how?" }
             return
         }
         if (_state.value is ScanState.Scanning) {
-            Logger.e("Scan state is Scanning while not scanning, how?")
+            Logger.e(TAG) { "Scan state is Scanning while not scanning, how?" }
             return
         }
 
         _state.value = ScanState.Scanning()
-        scanJob =
+        job =
             viewModelScope.launch(bleDispatcher) {
                 cameraControl.scan().collect { onCameraDiscovered(it) }
             }
-        Logger.i("Scan started")
+        Logger.i(TAG) { "Scan started" }
     }
 
-    override fun stopScan() {
+    override fun stopScanning() {
         val currentState = _state.value
         if (currentState !is ScanState.Scanning) {
-            Logger.e("Can't stop scanning because no scan is in progress")
+            Logger.e(TAG) { "Can't stop scanning because no scan is in progress" }
             return
         }
 
-        val currentJob = scanJob
+        val currentJob = job
         if (currentJob == null) {
-            Logger.e("Scan job is null while state is Scanning, how?")
+            Logger.e(TAG) { "Scan job is null while state is Scanning, how?" }
             return
         }
 
         currentJob.cancel("Stop scanning")
-        scanJob = null
+        job = null
 
         _state.value =
             if (currentState.cameras.isEmpty()) {
@@ -78,7 +84,7 @@ class CameraScanViewModelImpl(
                 ScanState.IdleWithResults(currentState.cameras)
             }
 
-        Logger.i("Scan stopped")
+        Logger.i(TAG) { "Scan stopped" }
     }
 
     private fun onCameraDiscovered(advertisement: Advertisement) {
@@ -91,7 +97,7 @@ class CameraScanViewModelImpl(
                 }
             }
 
-        Logger.i("Camera discovered: ${advertisement.name} (${advertisement.identifier}")
+        Logger.i(TAG) { "Camera discovered: ${advertisement.name} (${advertisement.identifier}" }
         val manufacturerData =
             advertisement.manufacturerData(0x2D01) ?: advertisement.manufacturerData(0x012D)
         if (manufacturerData == null) {
@@ -102,12 +108,12 @@ class CameraScanViewModelImpl(
         val modelCode = manufacturerData.decodeToString(4, 6)
         val modelInfo = SupportedAlphaCamera.forCodeOrNull(modelCode)
         if (modelInfo == null) {
-            Logger.i("Ignoring discovered camera, unsupported model: $modelCode\n$advertisement")
+            Logger.i(TAG) { "Ignoring discovered camera, unsupported model: $modelCode\n$advertisement" }
             return
         }
 
         if (scanResults.cameras.fastAny { it.identifier == advertisement.identifier }) {
-            Logger.d("Ignoring already discovered camera: ${advertisement.identifier}")
+            Logger.d(TAG) { "Ignoring already discovered camera: ${advertisement.identifier}" }
             return
         }
 

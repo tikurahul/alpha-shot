@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class SonyCameraControl() {
+class SonyCameraControl {
     /** The [Scanner] used to scan for the Camera. */
     private val scanner = Scanner {
         filters {
@@ -62,8 +63,9 @@ class SonyCameraControl() {
     private var peripheral: Peripheral? = null
 
     /** Start off with a state that says that we don't have a camera selected yet. */
-    private val _state: MutableStateFlow<CameraControlState> =
-        MutableStateFlow(CameraControlState.NoCamera)
+    private val _state: MutableStateFlow<CameraControlState> = MutableStateFlow(
+        CameraControlState.NoCamera
+    )
     val state: StateFlow<CameraControlState> = _state
 
     // We want to look for all cameras manufactured by Sony that fit our criteria.
@@ -72,8 +74,7 @@ class SonyCameraControl() {
     fun dispose() {
         scope.launch {
             peripheral?.disconnect()
-            camera = null
-            peripheral = null
+            peripheral?.cancel()
         }
     }
 
@@ -105,10 +106,11 @@ class SonyCameraControl() {
         this.camera = camera
 
         // Relay state transitions from the peripheral.
-        scope.launch {
+        peripheral.launch {
             peripheral.state.collect {
                 Logger.d(TAG) { "Peripheral State: $it" }
                 _state.value = wrapBleState(it)
+                Logger.d(TAG) { "Camera Control State: ${state.value}" }
             }
         }
         try {
@@ -116,8 +118,12 @@ class SonyCameraControl() {
         } catch (exception: NotConnectedException) {
             // Will reconnect.
         }
-        // Setup auto-reconnect behavior outside of the Bluetooth Stack.
-        enableAutoReconnect(camera)
+        // Setup auto-reconnect behavior outside of the Bluetooth Stack but make sure you
+        // use the peripheral scope to make sure the lifecycle is not leaked outside the scope
+        // of the peripheral itself.
+        peripheral.launch {
+            enableAutoReconnect(camera)
+        }
     }
 
     private suspend fun acquireFocus() {
@@ -152,7 +158,8 @@ class SonyCameraControl() {
 
     private suspend fun enableAutoReconnect(camera: DiscoveredCamera) {
         state.filter { it is CameraControlState.Disconnected }.first()
-        scope.ensureActive()
+        peripheral?.ensureActive()
+        peripheral?.cancel()
         peripheral = null
         Logger.d(TAG) { "Waiting to reconnect to camera." }
         delay(reconnectDelay)

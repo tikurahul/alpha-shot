@@ -1,18 +1,37 @@
 package com.rahulrav.camera.scan
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.Card
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import co.touchlab.kermit.Logger
 import org.jetbrains.compose.resources.imageResource
 
 @Composable
@@ -21,15 +40,16 @@ fun CameraScanner(
     modifier: Modifier = Modifier,
 ) {
     val state = viewModel.state.value
+    Logger.d("Camera Scanner") { "State :$state " }
     AnimatedContent(state, transitionSpec = { fadeIn() togetherWith fadeOut() }) { targetState ->
         when (targetState) {
-            ScanState.Idle -> IdleScreen(modifier) { viewModel.doScan() }
+            ScanState.Idle -> IdleScreen(modifier) { viewModel.scan() }
             is ScanState.Scanning ->
                 Scanning(
                     targetState.cameras,
                     modifier,
                     { camera -> viewModel.pairAndConnect(camera) },
-                    { viewModel.stopScan() },
+                    { viewModel.stopScanning() },
                 )
 
             is ScanState.IdleWithResults ->
@@ -37,7 +57,7 @@ fun CameraScanner(
                     targetState.cameras,
                     modifier,
                     { camera -> viewModel.pairAndConnect(camera) },
-                    { viewModel.doScan() },
+                    { viewModel.scan() },
                 )
         }
     }

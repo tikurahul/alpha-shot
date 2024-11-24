@@ -115,11 +115,11 @@ fun DrawerScaffold() {
             }) { innerPadding ->
                 NavHost(
                     navController,
-                    startDestination = Routes.CameraScanOrControl,
+                    startDestination = Routes.CameraScan,
                     modifier = Modifier.padding(innerPadding)
                 ) {
-                    composable<Routes.CameraScanOrControl> {
-                        CameraScanOrControl(navController)
+                    composable<Routes.CameraScan> {
+                        CameraRoute(navController)
                     }
                     composable<Routes.Settings> {
                         Settings(navController)
